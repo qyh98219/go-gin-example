@@ -41,7 +41,7 @@ func UploadImage(c *gin.Context) {
 				code = e.ERROR_UPLOAD_CHECK_IMAGE_FAIL
 			} else if err := c.SaveUploadedFile(image, src); err != nil {
 				logging.Warn(err)
-				code = e.ERROR_UPLOAD_SAVE_IMAGE_FALI
+				code = e.ERROR_UPLOAD_SAVE_IMAGE_FAIL
 			} else {
 				data["image_url"] = upload.GetIamgeFullUrl(imageName)
 				data["image_save_url"] = savePath + imageName

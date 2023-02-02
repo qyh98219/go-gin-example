@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-gin-example/models"
 	"github.com/go-gin-example/pkg/e"
+	"github.com/go-gin-example/pkg/logging"
 	"github.com/go-gin-example/pkg/setting"
 	"github.com/go-gin-example/pkg/util"
 	"github.com/unknwon/com"
@@ -62,18 +63,29 @@ func AddTag(c *gin.Context) {
 	valid.Range(state, 0, 1, "state").Message("状态只允许0或1")
 
 	code := e.INVALID_PARAMS
-	if !valid.HasErrors() {
-		if !models.ExistTagByName(name) {
-			code = e.SUCCESS
-			models.AddTag(name, state, createdBy)
-		} else {
-			code = e.ERROR_EXIST_TAG
-		}
-	} else {
+	if valid.HasErrors() {
 		for _, err := range valid.Errors {
 			log.Printf("err.Key: %s, err.Message: %s\n", err.Key, err.Message)
 		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"code": code,
+			"msg":  e.GetMsg(code),
+			"data": make(map[string]string),
+		})
 	}
+
+	if models.ExistTagByName(name) {
+		code = e.ERROR_EXIST_TAG
+		c.JSON(http.StatusOK, gin.H{
+			"code": code,
+			"msg":  e.GetMsg(code),
+			"data": make(map[string]string),
+		})
+	}
+
+	code = e.SUCCESS
+	models.AddTag(name, state, createdBy)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": code,
@@ -109,23 +121,37 @@ func EditTag(c *gin.Context) {
 	valid.MaxSize(name, 100, "name").Message("名称最长为100字符s")
 
 	code := e.INVALID_PARAMS
-	if !valid.HasErrors() {
-		code = e.SUCCESS
-		if models.ExitsTagById(id) {
-			data := make(map[string]interface{})
-			data["modified_by"] = modifiedBy
-			if name != "" {
-				data["name"] = name
-			}
-			if state != -1 {
-				data["state"] = state
-			}
-
-			models.EditTag(id, data)
-		} else {
-			code = e.ERROR_NOT_EXIST_TAG
+	if valid.HasErrors() {
+		for _, err := range valid.Errors {
+			logging.Info("err key: %s, err message: %v", err.Key, err.Message)
 		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": code,
+			"msg":  e.GetMsg(code),
+			"data": make(map[string]string),
+		})
 	}
+
+	if !models.ExitsTagById(id) {
+		code = e.ERROR_NOT_EXIST_TAG
+		c.JSON(http.StatusOK, gin.H{
+			"code": code,
+			"msg":  e.GetMsg(code),
+			"data": make(map[string]string),
+		})
+	}
+
+	code = e.SUCCESS
+	data := make(map[string]interface{})
+	data["modified_by"] = modifiedBy
+	if name != "" {
+		data["name"] = name
+	}
+	if state != -1 {
+		data["state"] = state
+	}
+
+	models.EditTag(id, data)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": code,
@@ -142,14 +168,28 @@ func DeleteTag(c *gin.Context) {
 	valid.Min(id, 1, "id").Message("ID必须大于0")
 
 	code := e.INVALID_PARAMS
-	if !valid.HasErrors() {
-		code = e.SUCCESS
-		if models.ExitsTagById(id) {
-			models.DeleteTag(id)
-		} else {
-			code = e.ERROR_NOT_EXIST_TAG
+	if valid.HasErrors() {
+		for _, err := range valid.Errors {
+			logging.Info("err key: %s, err message: %v", err.Key, err.Message)
 		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": code,
+			"msg":  e.GetMsg(code),
+			"data": make(map[string]string),
+		})
 	}
+
+	if models.ExitsTagById(id) {
+		code = e.ERROR_NOT_EXIST_TAG
+		c.JSON(http.StatusOK, gin.H{
+			"code": code,
+			"msg":  e.GetMsg(code),
+			"data": make(map[string]string),
+		})
+	}
+
+	code = e.SUCCESS
+	models.DeleteTag(id)
 	c.JSON(http.StatusOK, gin.H{
 		"code": code,
 		"msg":  e.GetMsg(code),
